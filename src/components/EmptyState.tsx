@@ -34,8 +34,11 @@ export function EmptyState({ onOpen, onNew, onPickRecent }: EmptyStateProps) {
   return (
     <div className="empty-state">
       <div className="empty-state-card">
+        <div className="empty-state-mark" aria-hidden="true">
+          <img src="/zen-mark.png" alt="" />
+        </div>
         <h1>Zen</h1>
-        <p>A beautified WYSIWYG editor for your markdown files.</p>
+        <p>A minimal markdown editor.</p>
         <div className="empty-state-actions">
           <button type="button" className="primary" onClick={onOpen}>
             Open File
