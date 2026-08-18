@@ -13,6 +13,7 @@ import { Sidebar } from "./components/Sidebar";
 import {
   basename,
   confirmDiscardChanges,
+  hasMarkdownExtension,
   pickFileToOpen,
   pickFileToSaveAs,
   pickFolder,
@@ -315,6 +316,29 @@ function App() {
     });
     return () => {
       void unlisten.then((fn) => fn());
+    };
+  }, [openSmart]);
+
+  // Open markdown files dropped onto the window.
+  useEffect(() => {
+    let unlistenFn: (() => void) | undefined;
+    void win
+      .onDragDropEvent(async (event) => {
+        if (event.payload.type !== "drop") return;
+        const paths = event.payload.paths.filter(hasMarkdownExtension);
+        for (const path of paths) {
+          try {
+            await openSmart(path);
+          } catch (err) {
+            console.error("drop open failed", path, err);
+          }
+        }
+      })
+      .then((fn) => {
+        unlistenFn = fn;
+      });
+    return () => {
+      unlistenFn?.();
     };
   }, [openSmart]);
 

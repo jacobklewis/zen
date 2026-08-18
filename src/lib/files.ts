@@ -62,15 +62,12 @@ export async function confirmDiscardChanges(
   );
   if (wantsToSave) return "save";
 
-  const reallyDiscard = await ask(
-    "Discard changes and continue?",
-    {
-      title: "Discard Changes?",
-      kind: "warning",
-      okLabel: "Discard",
-      cancelLabel: "Cancel",
-    },
-  );
+  const reallyDiscard = await ask("Discard changes and continue?", {
+    title: "Discard Changes?",
+    kind: "warning",
+    okLabel: "Discard",
+    cancelLabel: "Cancel",
+  });
   return reallyDiscard ? "discard" : "cancel";
 }
 
@@ -118,7 +115,7 @@ function joinPath(parent: string, name: string): string {
 
 const MARKDOWN_EXTENSIONS = new Set(["md", "markdown", "mdx"]);
 
-function hasMarkdownExtension(name: string): boolean {
+export function hasMarkdownExtension(name: string): boolean {
   const dot = name.lastIndexOf(".");
   if (dot < 0) return false;
   return MARKDOWN_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
