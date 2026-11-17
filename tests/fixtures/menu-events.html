@@ -1,0 +1,37 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script type="module">
+import { mockIPC, mockWindows } from '@tauri-apps/api/mocks';
+import { save } from '@tauri-apps/plugin-dialog';
+import { onMenu, onOpenFile } from '/src/lib/menuEvents.ts';
+const label = new URLSearchParams(location.search).get('label');
+const listeners = new Map();
+let nextId = 1;
+window.saves = [];
+window.opened = [];
+mockWindows(label);
+mockIPC((command, args) => {
+  if (command === 'plugin:event|listen') {
+    console.debug('[DEBUG-menu-routing]', label, JSON.stringify(args.target));
+    const id = nextId++; listeners.set(id, args); return id;
+  }
+  if (command === 'plugin:event|unlisten') { listeners.delete(args.eventId); return; }
+  if (command === 'plugin:dialog|save') { window.saves.push(args.options.defaultPath); return null; }
+  throw new Error(`Unexpected command: ${command}`);
+});
+// Tauri delivers to Any listeners in every webview, plus label-matching listeners.
+// See tauri/src/event/listener.rs::match_any_or_filter and manager::emit_to.
+window.deliverTargetedEvent = async (target, event, payload) => {
+  for (const [id, listener] of listeners) {
+    if (listener.event === event && (listener.target.kind === 'Any' || listener.target.label === target)) {
+      window.__TAURI_INTERNALS__.runCallback(listener.handler, { id, event, payload });
+    }
+  }
+};
+const unlistenMenu = await onMenu(action => {
+  if (['export-html', 'export-pdf', 'export-pdf-viewer'].includes(action)) {
+    void save({ defaultPath: `${label}.${action === 'export-html' ? 'html' : 'pdf'}` });
+  }
+});
+const unlistenOpen = await onOpenFile(path => window.opened.push(path));
+window.unsubscribe = async () => { await unlistenMenu(); await unlistenOpen(); };
+window.ready = true;
+</script></body></html>

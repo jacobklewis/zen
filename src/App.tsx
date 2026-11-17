@@ -6,10 +6,13 @@ import {
   useState,
 } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { message } from "@tauri-apps/plugin-dialog";
+import { exportPdf, type PdfStyle } from "./lib/exportPdf";
 import { getAllWindows, getCurrentWindow } from "@tauri-apps/api/window";
 import { CrepeEditor, type CrepeEditorHandle } from "./components/CrepeEditor";
 import { EmptyState } from "./components/EmptyState";
 import { Sidebar } from "./components/Sidebar";
+import { ResizableEditor } from "./components/ResizableEditor";
 import {
   basename,
   confirmDiscardChanges,
@@ -81,6 +84,8 @@ function App() {
     readStringFromStorage(SIDEBAR_FOLDER_KEY),
   );
   const editorRef = useRef<CrepeEditorHandle | null>(null);
+  const exportingRef = useRef(false);
+  const [exportingHtml, setExportingHtml] = useState(false);
 
   // Mirror state into refs so event listeners always see the latest values.
   const docRef = useRef(doc);
@@ -107,6 +112,7 @@ function App() {
 
   useEffect(() => {
     const base = filename ?? "Zen";
+    document.title = base;
     void win.setTitle(dirty ? `${base} \u2014 Edited` : base);
   }, [filename, dirty]);
 
@@ -207,6 +213,44 @@ function App() {
     return true;
   }, []);
 
+  const exportCurrentPdf = useCallback(async (style: PdfStyle = "document") => {
+    if (!editorRef.current || exportingRef.current) return;
+    exportingRef.current = true;
+    try {
+      await exportPdf(style);
+    } catch (err) {
+      console.error("PDF export failed", err);
+      await message(`Unable to export PDF.\n\n${String(err)}`, {
+        title: "PDF Export Failed",
+        kind: "error",
+      });
+    } finally {
+      exportingRef.current = false;
+    }
+  }, []);
+
+  const exportCurrentHtml = useCallback(async () => {
+    if (!editorRef.current || exportingRef.current) return;
+    exportingRef.current = true;
+    setExportingHtml(true);
+    try {
+      const snapshot = editorRef.current.getDocument();
+      if (!snapshot) throw new Error("The document is still loading. Please try again.");
+      const documentPath = docRef.current.path;
+      const { exportInteractiveHtml } = await import("./lib/htmlExport/export");
+      await exportInteractiveHtml(snapshot, documentPath);
+    } catch (err) {
+      console.error("HTML export failed", err);
+      await message(`Unable to export HTML.\n\n${String(err)}`, {
+        title: "HTML Export Failed",
+        kind: "error",
+      });
+    } finally {
+      setExportingHtml(false);
+      exportingRef.current = false;
+    }
+  }, []);
+
   const closeDocument = useCallback(async (): Promise<boolean> => {
     if (dirtyRef.current && (docRef.current.path || docRef.current.content)) {
       const decision = await confirmDiscardChanges(
@@ -261,6 +305,15 @@ function App() {
           case "save-as":
             await saveAs();
             break;
+          case "export-pdf":
+            await exportCurrentPdf();
+            break;
+          case "export-pdf-viewer":
+            await exportCurrentPdf("viewer");
+            break;
+          case "export-html":
+            await exportCurrentHtml();
+            break;
           case "close-document": {
             // If we're already on an empty editor and other windows are
             // open, close this window outright (matches what Cmd+W on an
@@ -296,6 +349,8 @@ function App() {
     };
   }, [
     closeDocument,
+    exportCurrentPdf,
+    exportCurrentHtml,
     isWindowEmpty,
     newWindow,
     openDialog,
@@ -420,7 +475,7 @@ function App() {
     <div className={`app ${sidebarVisible ? "sidebar-on" : ""}`}>
       <div className="titlebar" data-tauri-drag-region>
         <span className="title" data-tauri-drag-region>
-          {filename ?? "Zen"}
+          {exportingHtml ? "Exporting HTML…" : filename ?? "Zen"}
         </span>
         <span
           className={`dirty-dot ${dirty ? "visible" : ""}`}
@@ -438,12 +493,14 @@ function App() {
         )}
         <div className="editor-shell">
           {showEditor ? (
-            <CrepeEditor
-              key={doc.loadKey}
-              ref={editorRef}
-              defaultValue={doc.content}
-              onChange={handleEditorChange}
-            />
+            <ResizableEditor>
+              <CrepeEditor
+                key={doc.loadKey}
+                ref={editorRef}
+                defaultValue={doc.content}
+                onChange={handleEditorChange}
+              />
+            </ResizableEditor>
           ) : (
             <EmptyState
               onOpen={openDialog}

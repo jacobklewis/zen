@@ -5,9 +5,12 @@ import {
   useRef,
 } from "react";
 import { Crepe } from "@milkdown/crepe";
+import { editorViewCtx } from "@milkdown/kit/core";
+import type { DocumentNode } from "../lib/htmlExport/document";
 
 export interface CrepeEditorHandle {
   getMarkdown: () => string;
+  getDocument: () => DocumentNode | null;
 }
 
 interface CrepeEditorProps {
@@ -29,6 +32,11 @@ export const CrepeEditor = forwardRef<CrepeEditorHandle, CrepeEditorProps>(
       ref,
       () => ({
         getMarkdown: () => crepeRef.current?.getMarkdown() ?? "",
+        getDocument: () => {
+          const editor = crepeRef.current?.editor;
+          if (!editor || editor.status !== "Created") return null;
+          return editor.action((ctx) => ctx.get(editorViewCtx).state.doc.toJSON() as DocumentNode);
+        },
       }),
       [],
     );

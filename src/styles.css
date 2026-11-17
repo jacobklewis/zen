@@ -478,6 +478,59 @@ body {
 
 /* Editor */
 
+.editor-width-container {
+  width: 100%;
+  min-height: 100%;
+  display: flex;
+}
+
+.editor-width-frame {
+  position: relative;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.editor-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  z-index: 10;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.editor-resize-handle.left { left: 0; }
+.editor-resize-handle.right { right: 0; }
+
+.editor-resize-handle::after {
+  content: "";
+  position: absolute;
+  inset: 0 5px;
+  background: var(--border);
+}
+
+.editor-resize-handle:hover::after,
+.editor-resize-handle:focus-visible::after,
+.editor-resize-handle.resizing::after {
+  background: var(--accent);
+}
+
+.editor-resize-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+body.editor-resizing,
+body.editor-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
 .crepe-host {
   width: 100%;
   min-height: 100%;
@@ -487,7 +540,270 @@ body {
 .crepe-host .milkdown {
   background: transparent !important;
   width: 100%;
-  max-width: 1100px;
   margin: 0 auto;
   padding: 32px clamp(32px, 6vw, 80px) 96px;
+}
+
+/* Shared PDF layout. The document style below is the default; the viewer
+   option retains the current theme and typography. */
+@page {
+  margin: 21mm;
+}
+
+@media print {
+  :root {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    --prosemirror-virtual-cursor-color: transparent;
+  }
+
+  html,
+  body,
+  #root,
+  .app,
+  .workspace,
+  .editor-shell,
+  .editor-width-container,
+  .editor-width-frame,
+  .crepe-host {
+    display: block;
+    width: 100% !important;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .titlebar,
+  .editor-resize-handle,
+  .sidebar,
+  .empty-state,
+  .milkdown .milkdown-block-handle,
+  .milkdown .milkdown-slash-menu,
+  .milkdown .milkdown-toolbar,
+  .milkdown .milkdown-link-tooltip,
+  .milkdown .milkdown-latex-inline-edit,
+  .milkdown .milkdown-code-block .tools,
+  .milkdown .milkdown-code-block .language-picker,
+  .milkdown .milkdown-table-block .handle,
+  .milkdown .milkdown-table-block .drag-preview,
+  .milkdown .milkdown-image-block .operation,
+  .milkdown .image-resize-handle,
+  .milkdown .cm-panels,
+  .milkdown .cm-gutters,
+  .milkdown .cm-cursorLayer,
+  .milkdown .cm-selectionLayer,
+  .milkdown .ProseMirror-gapcursor,
+  .milkdown .prosemirror-virtual-cursor,
+  .milkdown .crepe-drop-cursor {
+    display: none !important;
+  }
+
+  .crepe-host .milkdown {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .crepe-host .milkdown > .ProseMirror {
+    padding: 0;
+  }
+
+  .milkdown .ProseMirror,
+  .milkdown .cm-editor,
+  .milkdown .cm-scroller,
+  .milkdown .tableWrapper {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .milkdown .cm-scroller {
+    display: block !important;
+  }
+
+  .milkdown .cm-content {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .milkdown .cm-activeLine {
+    background: transparent !important;
+  }
+
+  .milkdown .cm-content,
+  .milkdown .cm-line,
+  .milkdown pre {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+  }
+
+  .milkdown h1,
+  .milkdown h2,
+  .milkdown h3,
+  .milkdown h4,
+  .milkdown h5,
+  .milkdown h6 {
+    break-after: avoid;
+  }
+
+  .milkdown p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .milkdown tr,
+  .milkdown img,
+  .milkdown .milkdown-image-block {
+    break-inside: avoid;
+  }
+
+  .milkdown img {
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .milkdown .selected,
+  .milkdown .ProseMirror-selectednode,
+  .milkdown th:has(.ProseMirror-selectednode),
+  .milkdown td:has(.ProseMirror-selectednode) {
+    outline: none !important;
+  }
+
+  .milkdown .selectedCell::after,
+  .milkdown .crepe-placeholder::before {
+    display: none !important;
+  }
+}
+
+/* Print typography is independent of the screen theme. Keep these selectors
+   more specific than the dynamically loaded Milkdown theme stylesheet. */
+@media print {
+  :root:not([data-pdf-style="viewer"]) {
+    color-scheme: light;
+    --bg: #fff;
+    --fg: #202124;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown {
+    --crepe-color-background: #fff;
+    --crepe-color-on-background: #202124;
+    --crepe-color-surface: #f4f5f7;
+    --crepe-color-surface-low: #f4f5f7;
+    --crepe-color-on-surface: #202124;
+    --crepe-color-on-surface-variant: #505762;
+    --crepe-color-outline: #cbd0d6;
+    --crepe-color-primary: #285a8e;
+    --crepe-color-secondary: #e5e7eb;
+    --crepe-color-on-secondary: #202124;
+    --crepe-color-inline-code: #9b2948;
+    --crepe-color-inline-area: #edf0f3;
+    --crepe-color-selected: #dce1e7;
+    font-size: 11pt;
+    line-height: 1.5;
+    text-align: left;
+    overflow-wrap: break-word;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror p {
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0;
+    margin: 0 0 7pt;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(h1, h2, h3, h4, h5, h6) {
+    font-weight: 600;
+    line-height: 1.25;
+    padding: 0;
+    margin: 18pt 0 7pt;
+    color: #202124;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror h1 {
+    font-size: 26pt;
+    margin-top: 24pt;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror > :first-child {
+    margin-top: 0;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror h2 { font-size: 18pt; }
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror h3 { font-size: 14pt; }
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror h4 { font-size: 12pt; }
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(h5, h6) { font-size: 11pt; }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(pre, .milkdown-code-block) {
+    background: #f4f5f7;
+    color: #202124;
+    border: 0.5pt solid #e0e3e7;
+    border-radius: 4pt;
+    padding: 9pt 11pt;
+    margin: 9pt 0 12pt;
+    break-inside: avoid;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown :is(.cm-editor, .cm-scroller, .cm-content, .cm-line, pre code) {
+    font-family: var(--crepe-font-code);
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .cm-content { padding: 0; }
+  :root:not([data-pdf-style="viewer"]) .milkdown .cm-line { padding: 0; }
+  :root:not([data-pdf-style="viewer"]) .milkdown .cm-gutters { display: none; }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin: 9pt 0 12pt;
+    font-size: 10pt;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(th, td) {
+    min-width: 0;
+    padding: 6pt 8pt;
+    border: 0.5pt solid #d8dde3;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror th {
+    background: #f0f2f5;
+    font-weight: 600;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(th, td) p {
+    font-size: inherit;
+    margin: 0;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror blockquote {
+    margin: 10pt 0;
+    padding: 0 0 0 12pt;
+    color: #505762;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror :is(ul, ol) {
+    margin: 5pt 0 9pt;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .milkdown-list-item-block li .label-wrapper,
+  :root:not([data-pdf-style="viewer"]) .milkdown .milkdown-list-item-block li .label-wrapper .label {
+    height: 16.5pt;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .milkdown-list-item-block li .label-wrapper .label {
+    padding: 0;
+  }
+
+  :root:not([data-pdf-style="viewer"]) .milkdown .ProseMirror img {
+    max-height: 220mm;
+    width: auto;
+    height: auto;
+  }
 }

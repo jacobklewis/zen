@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><script type="module">
+import { Crepe } from '@milkdown/crepe';
+import { editorViewCtx } from '@milkdown/kit/core';
+import { buildInteractiveHtml } from '/src/lib/htmlExport/document.ts';
+window.buildExport = async (markdown, title = 'Reader test') => {
+  const host = document.createElement('div');
+  host.style.cssText = 'position:absolute;left:-20000px;width:900px';
+  document.body.append(host);
+  const editor = new Crepe({ root: host, defaultValue: markdown });
+  try {
+    await editor.create();
+    const doc = editor.editor.action(ctx => ctx.get(editorViewCtx).state.doc.toJSON());
+    return await buildInteractiveHtml(doc, {
+      title,
+      loadImage: async source => {
+        if (source.startsWith('data:image/')) return source;
+        throw new Error('Unavailable test image');
+      },
+    });
+  } finally { await editor.destroy(); host.remove(); }
+};
+window.buildFromModel = doc => buildInteractiveHtml(doc, { title: '</title><script>window.injected = true<' + '/script>', loadImage: async () => { throw new Error('Unavailable image'); } });
+window.ready = true;
+</script></body></html>

@@ -1,3 +1,5 @@
+mod html_export;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -114,6 +116,12 @@ fn open_new_window(app: AppHandle) -> Result<(), String> {
     spawn_editor_window(&app, None)
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+/// Print the calling window so exports also work in secondary editors.
+#[tauri::command]
+fn export_pdf(window: WebviewWindow) -> Result<(), String> {
+    window.print().map_err(|err| err.to_string())
 }
 
 fn next_window_label(app: &AppHandle) -> String {
@@ -242,6 +250,17 @@ fn build_menu(app: &AppHandle, recents: &[String]) -> tauri::Result<tauri::menu:
         .id("save-as")
         .accelerator("CmdOrCtrl+Shift+S")
         .build(app)?;
+    let export_pdf_item = MenuItemBuilder::new("Export as PDF\u{2026}")
+        .id("export-pdf")
+        .accelerator("CmdOrCtrl+Shift+E")
+        .build(app)?;
+    let export_pdf_viewer_item = MenuItemBuilder::new("Export PDF (Match Viewer Appearance)\u{2026}")
+        .id("export-pdf-viewer")
+        .build(app)?;
+    let export_html_item = MenuItemBuilder::new("Export as Interactive HTML\u{2026}")
+        .id("export-html")
+        .accelerator("CmdOrCtrl+Alt+E")
+        .build(app)?;
     let close_doc_item = MenuItemBuilder::new("Close Document")
         .id("close-document")
         .accelerator("CmdOrCtrl+W")
@@ -254,6 +273,9 @@ fn build_menu(app: &AppHandle, recents: &[String]) -> tauri::Result<tauri::menu:
         .separator()
         .item(&save_item)
         .item(&save_as_item)
+        .item(&export_pdf_item)
+        .item(&export_pdf_viewer_item)
+        .item(&export_html_item)
         .separator()
         .item(&close_doc_item)
         .build()?;
@@ -416,6 +438,8 @@ pub fn run() {
             clear_recent_files,
             open_window_with_file,
             open_new_window,
+            export_pdf,
+            html_export::read_export_image,
         ])
         .setup(|app| {
             let recents = Recents::load(app.handle());
