@@ -10,7 +10,6 @@ window.opened = [];
 mockWindows(label);
 mockIPC((command, args) => {
   if (command === 'plugin:event|listen') {
-    console.debug('[DEBUG-menu-routing]', label, JSON.stringify(args.target));
     const id = nextId++; listeners.set(id, args); return id;
   }
   if (command === 'plugin:event|unlisten') { listeners.delete(args.eventId); return; }

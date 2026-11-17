@@ -1,7 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
 async function editorWindow(page: Page, label: string) {
-  page.on('console', message => { if (message.text().startsWith('[DEBUG-menu-routing]')) console.log(message.text()); });
   await page.goto(`http://localhost:1420/tests/fixtures/menu-events.html?label=${label}`);
   await page.waitForFunction(() => (window as any).ready);
 }
